@@ -1,0 +1,12 @@
+# we need ollama with
+# - bge-m3 (embeddings)
+# - gpt-oss:20b (llm)
+langchain
+langchain-ollama
+
+langchain-core  # For the InMemoryVectorStore
+numpy           # needed for the vector store search
+
+jinja2          # For the RAG Document processing
+
+rich            # For better terminal outputs

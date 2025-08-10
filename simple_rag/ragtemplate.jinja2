@@ -1,0 +1,11 @@
+{%- for result in results %}
+---
+RAG Document
+Metadata:
+{{ result.metadata }}
+
+Similarity Score: {{ result.score }}
+
+Content:
+{{ result.page_content }}
+{%- endfor %}
