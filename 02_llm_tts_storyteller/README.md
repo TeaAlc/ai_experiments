@@ -37,3 +37,37 @@ An interactive storyteller that generates an endless fantasy narrative using an 
   ```
 
 2) Install dependencies
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3) Set up Ollama (if using default LLM backend)
+   - Install Ollama: https://ollama.ai/download
+   - Pull required models:
+     ```bash
+     ollama pull bge-m3
+     ollama pull gpt-oss:20b
+     ```
+   - Ensure Ollama is running on e.G. `http://localhost:11434`
+
+4) Create the system prompt file
+   - The application requires a `system_prompt.md` file in the project root
+   - A sample file is included in the repository
+   - Customize it to change the storytelling style and behavior
+
+5) Run the application
+   ```bash
+   python main.py
+   ```
+
+## Configuration
+
+### Environment Variables
+- `OLLAMA_SERVER_URL`: Override the default Ollama server URL (default: `http://localhost:11434`)
+- `OPENAI_API_KEY`: Required if using OpenAI-compatible APIs instead of Ollama
+
+### LLM Backend Options
+The application supports multiple LLM backends. Edit (comment/uncomment) `main.py` to switch:
+
+**Ollama (Default)**
+**OpenAI**
