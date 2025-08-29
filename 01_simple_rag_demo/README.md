@@ -7,6 +7,7 @@ A minimal Retrieval-Augmented Generation (RAG) scaffold that:
 - Queries a local LLM (`gpt-oss:20b` via Ollama) to enrich the question and to interact
 
 This project is intended as a small, hackable starting point for experimenting with local RAG setups.
+Don't fear langchain, we just use a little bit of it here and keep the code as simple as possible.
 
 ## Prerequisites
 - Python 3.12+
