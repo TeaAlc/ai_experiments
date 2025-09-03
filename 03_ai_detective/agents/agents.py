@@ -1,10 +1,11 @@
+from langchain_core.language_models import BaseChatModel
 from langgraph.prebuilt import create_react_agent
 
 from helper import read_text_file
 
 
 class Agent:
-    def __init__(self, name:str, system_prompt:str, model:str):
+    def __init__(self, name:str, system_prompt:str, model:BaseChatModel):
         self.name = name
         self.system_prompt = system_prompt
         self.model = model
@@ -20,6 +21,6 @@ class Agent:
                 name=self.name)
 
     @classmethod
-    def create(cls, name:str, sys_prompt_path:str, model:str) -> "Agent":
+    def create(cls, name:str, sys_prompt_path:str, model:BaseChatModel) -> "Agent":
         sys_prompt = read_text_file(sys_prompt_path)
         return Agent(name, sys_prompt, model)
