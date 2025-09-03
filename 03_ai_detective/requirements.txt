@@ -6,6 +6,9 @@ langchain
 langchain-ollama
 langchain-openai
 
+langgraph
+langgraph-agents
+
 #langchain-core  # For the InMemoryVectorStore
 #numpy           # needed for the vector store search
 
@@ -24,4 +27,4 @@ kokoro
 
 # Kokora runtime dependencies
 spacy==3.8.0
-en-core-web-sm==3.8.0
+#en-core-web-sm==3.8.0
