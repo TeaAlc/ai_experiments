@@ -24,11 +24,11 @@ class AgentMemory(Runnable[dict[str, Any], dict[str, Any]]):
         config: Optional[RunnableConfig] = None,
         **kwargs: Any,
     ) -> Output:
-        merged: list[BaseMessage] = self._history.messages + input.get("messages", [])
+        merged: list[BaseMessage] = self.get_messages() + input.get("messages", [])
         return {"messages": merged}
 
     def get_joined(self) -> str:
-        return get_buffer_string(self._history.messages)
+        return get_buffer_string(self.get_messages())
 
     def save(
         self,
@@ -36,16 +36,19 @@ class AgentMemory(Runnable[dict[str, Any], dict[str, Any]]):
         output_msg: Optional[BaseMessage] = None
     ) -> None:
         if input_msg:
-            self._history.messages.append(input_msg)
+            self.get_messages().append(input_msg)
         if output_msg:
-            self._history.messages.append(output_msg)
+            self.get_messages().append(output_msg)
+
+    def get_messages(self) -> list[BaseMessage]:
+        return self._history.messages
 
     def get_last_message(self) -> Optional[BaseMessage]:
-        return self._history.messages[-1] if self._history.messages else None
+        return self.get_messages()[-1] if self.get_messages() else None
 
     def remove_last_message(self) -> Optional[BaseMessage]:
-        if self._history.messages and len(self._history.messages) > 0:
-            return self._history.messages.pop()
+        if self.get_messages() and len(self.get_messages()) > 0:
+            return self.get_messages().pop()
         return None
 
     def clear(self) -> None:
@@ -83,7 +86,7 @@ class Agent:
         def _fn(inputs: dict):
             return {
                 **inputs,
-                "chat_history": self.memory.messages  # Always pull from memory
+                "chat_history": self.memory.get_messages()  # Always pull from memory
             }
 
         return RunnableLambda(_fn)
