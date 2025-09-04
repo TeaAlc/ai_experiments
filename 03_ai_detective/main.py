@@ -48,6 +48,9 @@ def speak_with(your_name:str, target_name:str, question:str) -> str:
     sender_agent = a_manger.get_agent(your_name)
     target_agent = a_manger.get_agent(target_name)
 
+    if target_agent is None:
+        return "AGENT_NOT_FOUND"
+
     message = HumanMessage(f"{your_name}: {question}")
     answer = target_agent().invoke({"messages": [message]})
 
@@ -76,6 +79,8 @@ talk_node = ToolNode([speak_with])
 graph.add_node("talk_node", talk_node)
 
 graph.add_edge(agent_tom.name, "talk_node")
+graph.add_edge("talk_node", agent_tom.name)
+
 graph.add_edge(agent_tom.name, END)
 
 graph.set_entry_point(agent_tom.name)
