@@ -29,18 +29,7 @@ llm = ChatOllama(model=MODEL, base_url=base_url,
 
 from langchain_core.tools import tool
 
-graph = StateGraph(MessagesState)
-
-agent_tom = Agent(name="Tom", system_prompt="You are Tom, a cat.", model=llm)
-agent_jerry = Agent(name="Jerry", system_prompt="You are Jerry, a mouse.", model=llm)
-agent_bob = Agent(name="Bob", system_prompt="You are Bob, a dog.", model=llm)
-
-a_manger = AgentManager([agent_tom, agent_jerry, agent_bob])
-
-graph.add_node(agent_tom.name, agent_tom())
-graph.add_node(agent_jerry.name, agent_jerry())
-graph.add_node(agent_bob.name, agent_bob())
-
+a_manger = AgentManager()
 
 @tool
 def speak_with(your_name:str, target_name:str, question:str) -> str:
@@ -55,7 +44,32 @@ def speak_with(your_name:str, target_name:str, question:str) -> str:
     Returns:
         A answer to the question or AGENT_NOT_FOUND if the target agent is not found.
     """
-    return  "The Answer is 42!"
+    print(f"speak_with called: {your_name}->{target_name}:\"{question}\"")
+    sender_agent = a_manger.get_agent(your_name)
+    target_agent = a_manger.get_agent(target_name)
+
+    message = HumanMessage(f"{your_name}: {question}")
+    answer = target_agent().invoke({"messages": [message]})
+
+    answer = answer["output"]
+    sender_agent.memory.save(input_msg=message, output_msg=answer)
+
+    return answer
+
+
+graph = StateGraph(MessagesState)
+
+agent_tom = Agent(name="Tom", system_prompt="You are Tom, a cat.", model=llm, tools=[speak_with])
+agent_jerry = Agent(name="Jerry", system_prompt="You are Jerry, a mouse.", model=llm)
+agent_bob = Agent(name="Bob", system_prompt="You are Bob, a dog.", model=llm)
+
+a_manger.put_agent(agent_tom)
+a_manger.put_agent(agent_jerry)
+a_manger.put_agent(agent_bob)
+
+graph.add_node(agent_tom.name, agent_tom())
+graph.add_node(agent_jerry.name, agent_jerry())
+graph.add_node(agent_bob.name, agent_bob())
 
 talk_node = ToolNode([speak_with])
 
@@ -71,6 +85,6 @@ graph = graph.compile()
 #print(graph.get_graph().draw_ascii())
 
 result = graph.invoke({
-    "messages": [*agent_tom.memory.get_messages(), HumanMessage("Was ist 12 plus 30?")],
+    "messages": [*agent_tom.memory.get_messages(), HumanMessage("Frage mit Hilfe des tools 'speak_with' Jerry: Was ist 12 plus 30?")],
 })
-print(result["messages"][-1])
+print(result["messages"][-1].content)

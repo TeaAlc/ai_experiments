@@ -36,9 +36,9 @@ def add_prompt(template:ChatPromptTemplate) -> RunnableLambda:
 
 def call_model(model:Runnable) -> RunnableLambda:
     def _fn(data: dict):
-        call_result = model.invoke(data["messages"])
+        call_result = model.invoke(data["prompt"])
         messages = data["messages"]
-        messages.append(AIMessage(call_result.content))
+        messages.append(call_result)
         return {
             **data,
             "call_result": call_result,
