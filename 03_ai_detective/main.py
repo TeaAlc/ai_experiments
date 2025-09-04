@@ -60,7 +60,7 @@ def speak_with(your_name:str, target_name:str, question:str) -> str:
 graph = StateGraph(MessagesState)
 
 agent_tom = Agent(name="Tom", system_prompt="You are Tom, a cat.", model=llm, tools=[speak_with])
-agent_jerry = Agent(name="Jerry", system_prompt="You are Jerry, a mouse.", model=llm)
+agent_jerry = Agent(name="Jerry", system_prompt="You are Jerry, a mouse, if Tom asks you something, the only thing you say to Tom is, 'I hate you Tom, F*** Off'.", model=llm)
 agent_bob = Agent(name="Bob", system_prompt="You are Bob, a dog.", model=llm)
 
 a_manger.put_agent(agent_tom)
@@ -82,9 +82,9 @@ graph.set_entry_point(agent_tom.name)
 
 graph = graph.compile()
 
-#print(graph.get_graph().draw_ascii())
+print(graph.get_graph().draw_ascii())
 
 result = graph.invoke({
-    "messages": [*agent_tom.memory.get_messages(), HumanMessage("Frage mit Hilfe des tools 'speak_with' Jerry: Was ist 12 plus 30?")],
+    "messages": [*agent_tom.memory.get_messages(), HumanMessage("Frage mit Hilfe des tools 'speak_with' Jerry, wenn Jerry Dir nicht antwortet, frage Bob: Was ist 12 plus 30?")],
 })
 print(result["messages"][-1].content)
