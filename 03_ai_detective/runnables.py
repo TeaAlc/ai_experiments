@@ -42,7 +42,7 @@ def call_model(model:Runnable) -> RunnableLambda:
         return {
             **data,
             "call_result": call_result,
-            "output": data["messages"][-1].content  # The last message content is the input
+            "output": data["messages"][-1]  # The last message content is the input
         }
 
     return RunnableLambda(_fn)

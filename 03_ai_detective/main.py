@@ -1,6 +1,6 @@
 import os
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_ollama import ChatOllama
 from langgraph.constants import END
 from langgraph.graph import MessagesState, StateGraph
@@ -44,18 +44,22 @@ def speak_with(your_name:str, target_name:str, question:str) -> str:
     Returns:
         A answer to the question or AGENT_NOT_FOUND if the target agent is not found.
     """
-    print(f"speak_with called: {your_name}->{target_name}:\"{question}\"")
+    print(f"speak_with called: {your_name}->{target_name}")
+    print(f" {your_name}:\"{question}\"")
     sender_agent = a_manger.get_agent(your_name)
     target_agent = a_manger.get_agent(target_name)
 
     if target_agent is None:
         return "AGENT_NOT_FOUND"
 
-    message = HumanMessage(f"{your_name}: {question}")
+    message = AIMessage(f"{your_name}: {question}")
     answer = target_agent().invoke({"messages": [message]})
 
     answer = answer["output"]
-    sender_agent.memory.save(input_msg=message, output_msg=answer)
+    answer.content = f"{target_name}: {answer.content}"
+    print(f" {answer.content}")
+
+    sender_agent.memory.save(input_msg=None, output_msg=answer)
 
     return answer
 
