@@ -1,62 +1,13 @@
-from typing import Any, Optional
+import runnables as r
 
-from langchain.agents import initialize_agent, AgentType
-from langchain_core.chat_history import InMemoryChatMessageHistory
+from typing import Any
+
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import BaseMessage, get_buffer_string, SystemMessage, AIMessage, HumanMessage
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import Runnable, RunnableConfig, RunnableLambda
-from langchain_core.runnables.utils import Input, Output
-from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.prebuilt import create_react_agent
+from langchain_core.runnables import RunnableSerializable
 
+from .memory import AgentMemory
 from helper import read_text_file
-
-
-class AgentMemory(Runnable[dict[str, Any], dict[str, Any]]):
-    def __init__(self):
-        self._history = InMemoryChatMessageHistory()
-
-    def invoke(
-        self,
-        input: Input,
-        config: Optional[RunnableConfig] = None,
-        **kwargs: Any,
-    ) -> Output:
-        merged: list[BaseMessage] = self.get_messages() + input.get("messages", [])
-        return {"messages": merged}
-
-    def get_joined(self) -> str:
-        return get_buffer_string(self.get_messages())
-
-    def save(
-        self,
-        input_msg: Optional[BaseMessage] = None,
-        output_msg: Optional[BaseMessage] = None
-    ) -> None:
-        if input_msg:
-            self.get_messages().append(input_msg)
-        if output_msg:
-            self.get_messages().append(output_msg)
-
-    def get_messages(self) -> list[BaseMessage]:
-        return self._history.messages
-
-    def get_last_message(self) -> Optional[BaseMessage]:
-        return self.get_messages()[-1] if self.get_messages() else None
-
-    def remove_last_message(self) -> Optional[BaseMessage]:
-        if self.get_messages() and len(self.get_messages()) > 0:
-            return self.get_messages().pop()
-        return None
-
-    def clear(self) -> None:
-        self._history.clear()
-
-    def get_history(self) -> InMemoryChatMessageHistory:
-        return self._history
-
 
 class Agent:
     def __init__(self, name:str, system_prompt:str, model:BaseChatModel, tools=None):
@@ -72,40 +23,32 @@ class Agent:
         self._langchain_agent = None
         self._custom_agent = None
 
-    def _build_prompt(self):
+    def get_prompt(self):
         prompt = ChatPromptTemplate.from_messages([
             ("system", "**YOUR NAME IS {name}**\n\n{system_prompt}"),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
-            ("ai", "{agent_scratchpad}")
         ])
-        prompt.partial(name=self.name, system_prompt=self.system_prompt)
+        prompt = prompt.partial(name=self.name, system_prompt=self.system_prompt)
         return prompt
-
-    def _inject_memory(self) -> RunnableLambda:
-        def _fn(inputs: dict):
-            return {
-                **inputs,
-                "chat_history": self.memory.get_messages()  # Always pull from memory
-            }
-
-        return RunnableLambda(_fn)
-
-    def get_react_agent_without_memory(self):
-        if self._react_agent is None:
-            agent = create_react_agent(
-                model=self.model,
-                tools=self.tools,
-                prompt= self._build_prompt(),
-                name=self.name)
-            self._react_agent = self._inject_memory() | agent
-        return self._react_agent
 
     def get_custom_chain_agent_with_memory(self):
         if self._custom_agent is None:
-            chain = self._inject_memory() | self._build_prompt() | self.model_w_tools | StrOutputParser()
+            chain = (
+                    r.extract_input()
+                    | r.add_chat_history(self.memory)
+                    | r.add_prompt(self.get_prompt())
+                    | r.call_model(self.model_w_tools)
+                    # maybe a validation step?
+                    | r.update_agent_memory(self.memory)
+                    | r.reduce_messages()
+            )
+
             self._custom_agent = chain
         return self._custom_agent
+
+    def __call__(self) -> RunnableSerializable[Any, str]:
+        return self.get_custom_chain_agent_with_memory()
 
     @classmethod
     def create(cls, name:str, sys_prompt_path:str, model:BaseChatModel) -> "Agent":
@@ -114,8 +57,11 @@ class Agent:
 
 
 class AgentManager:
-    def __init__(self, agents: dict[str, Agent] = None):
-        self.agents = agents or {}
+    def __init__(self, agents:list[Agent] = None):
+        self.agents = {}
+        if agents:
+            for agent in agents:
+                self.put_agent(agent)
 
     def get_agent(self, agent_name: str) -> Agent:
         return self.agents.get(agent_name)
